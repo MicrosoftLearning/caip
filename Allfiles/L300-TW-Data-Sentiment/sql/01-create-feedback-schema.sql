@@ -1,0 +1,55 @@
+SET NOCOUNT ON;
+GO
+
+DROP TABLE IF EXISTS dbo.customer_feedback;
+DROP TABLE IF EXISTS dbo.product;
+GO
+
+CREATE TABLE dbo.product (
+    ProductID varchar(10) NOT NULL PRIMARY KEY,
+    ProductName nvarchar(100) NOT NULL,
+    ProductDescription nvarchar(500) NOT NULL
+);
+
+CREATE TABLE dbo.customer_feedback (
+    FeedbackID int NOT NULL PRIMARY KEY,
+    ProductID varchar(10) NOT NULL,
+    FeedbackDate date NOT NULL,
+    Channel varchar(30) NOT NULL,
+    Region varchar(50) NOT NULL,
+    FeedbackText nvarchar(max) NOT NULL,
+    Sentiment varchar(10) NULL,
+    AIError nvarchar(max) NULL,
+    CONSTRAINT FK_customer_feedback_product
+        FOREIGN KEY (ProductID) REFERENCES dbo.product(ProductID)
+);
+GO
+
+INSERT INTO dbo.product (ProductID, ProductName, ProductDescription) VALUES
+('PRD001', N'CardioNova prefilled injector', N'Launch-readiness feedback focuses on packaging, instructions, delivery, and support.'),
+('PRD002', N'OncoRelief infusion kit', N'Launch-readiness feedback focuses on scheduling, packaging, training, and support.'),
+('PRD003', N'NeuroVance starter pack', N'Launch-readiness feedback focuses on onboarding, instructions, delivery, and support.');
+
+INSERT INTO dbo.customer_feedback
+    (FeedbackID, ProductID, FeedbackDate, Channel, Region, FeedbackText)
+VALUES
+(1, 'PRD001', '2026-09-02', 'Portal', 'North America', N'The packaging arrived intact, and the quick-start instructions were clear.'),
+(2, 'PRD001', '2026-09-03', 'Email', 'Europe', N'The delivery was two days late, and the clinic could not confirm the revised arrival time.'),
+(3, 'PRD001', '2026-09-04', 'Survey', 'Asia Pacific', N'The injector training was useful, but the replacement process took too long.'),
+(4, 'PRD001', '2026-09-05', 'Portal', 'North America', N'The shipment arrived on the scheduled date.'),
+(5, 'PRD001', '2026-09-06', 'Email', 'Europe', N'Support answered quickly and resolved the packaging question in one call.'),
+(6, 'PRD001', '2026-09-07', 'Survey', 'Asia Pacific', N'The printed instructions were difficult to read, and the online version was unavailable.'),
+(7, 'PRD002', '2026-09-02', 'Portal', 'Europe', N'Scheduling was straightforward, and the training materials helped our team prepare.'),
+(8, 'PRD002', '2026-09-03', 'Email', 'North America', N'The kit was complete, but the appointment was rescheduled without enough notice.'),
+(9, 'PRD002', '2026-09-04', 'Survey', 'Asia Pacific', N'The temperature indicator was damaged when the package arrived.'),
+(10, 'PRD002', '2026-09-05', 'Portal', 'Europe', N'The support team explained the setup clearly and followed up the next day.'),
+(11, 'PRD002', '2026-09-06', 'Email', 'North America', N'The delivery status page showed the same update throughout the day.'),
+(12, 'PRD003', '2026-09-02', 'Survey', 'North America', N'The onboarding call was helpful, and the starter materials were easy to follow.'),
+(13, 'PRD003', '2026-09-03', 'Portal', 'Europe', N'The package arrived on time, but one instruction card was missing.'),
+(14, 'PRD003', '2026-09-04', 'Email', 'Asia Pacific', N'No problems were reported during delivery or onboarding.'),
+(15, 'PRD003', '2026-09-05', 'Survey', 'North America', N'I contacted support twice and still did not receive the missing guide.'),
+(16, 'PRD003', '2026-09-06', 'Portal', 'Europe', N'The portal registration was confusing at first, although support resolved it quickly.');
+GO
+
+SELECT COUNT(*) AS ProductCount FROM dbo.product;
+SELECT COUNT(*) AS FeedbackCount FROM dbo.customer_feedback;
