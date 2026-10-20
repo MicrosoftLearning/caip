@@ -8,6 +8,11 @@ This repo contains exercises and supporting files for Microsoft skilling content
 The exercises may be used in both self-paced skilling experiences on [Microsoft Learn](https://learn.microsoft.com) and in Microsoft authorized instructor-led training.
 <!-- Update the paragraph above with a link to a specific Learning Path or course as appropriate -->
 
+## Caldova agents workshop
+
+- [Assess capacity with a governed Caldova agent workflow](Instructions/Exercises/04-caldova-governed-agents.md) - Level 300, 110 minutes, with up to 10 minutes of optional challenges.
+- [Starter assets and provider setup](Labfiles/04-caldova-agents/README.md) - Synthetic evidence, agent instructions, qualification-filter repair, evaluation checks, and hosted-environment readiness requirements.
+
 ## Information for MCTs
 <!-- You can remove this section if the exercises will not be used to support Microsoft Official Curriculum ILT -->
 
