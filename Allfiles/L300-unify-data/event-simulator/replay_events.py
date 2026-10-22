@@ -33,6 +33,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Send only the first nonexception event so a destination wizard can inspect the schema.",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Override the local rerun guard. May duplicate events; use only with instructor approval.",
+    )
     return parser.parse_args()
 
 
@@ -93,7 +98,25 @@ def main() -> None:
         print(f"Validated {len(events)} simulated {noun}.")
         return
 
+    mode = "prime" if args.prime else "full"
+    state_path = Path(__file__).with_name(f".replay-{mode}.state")
+    try:
+        state_file = state_path.open("w" if args.force else "x", encoding="utf-8")
+    except FileExistsError:
+        status = state_path.read_text(encoding="utf-8").strip()
+        if status == "completed":
+            message = "Priming already completed." if args.prime else "Replay already completed."
+        else:
+            message = "A previous attempt started and may have sent events, or is still running."
+        raise SystemExit(
+            f"{message} No events sent. Ask your instructor before using --force. "
+            "Never use --force while another replay is running."
+        ) from None
+
+    with state_file:
+        state_file.write("started\n")
     send_events(events, args.delay_seconds)
+    state_path.write_text("completed\n", encoding="utf-8")
     noun = "event" if len(events) == 1 else "events"
     print(f"Replay complete: {len(events)} {noun} sent.")
 
