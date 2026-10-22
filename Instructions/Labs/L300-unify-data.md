@@ -37,6 +37,8 @@ By the end of this exercise, you can:
 
 > **Note**: This exercise requires a paid F2 or higher Fabric capacity. The training environment provides Azure OpenAI resource and deployment names, an Azure subscription with permission and quota to create a Foundry project and model deployment, a supported Azure region, and a Microsoft Copilot Studio environment.
 
+> **Important**: Fabric Trial can support the Lakehouse and streaming foundation, but it doesn't meet the data-agent capacity prerequisite. Before you start, confirm that your lab identity can create a workspace on the supplied paid capacity. If **Fabric** is unavailable or data-agent creation reports that an admin must change the capacity SKU, contact your instructor. Don't purchase capacity or change tenant settings for this exercise.
+
 > **Note**: Fabric data agent, Fabric IQ, and ontology features used in this exercise are in preview. Labels in the user interface can change.
 
 ## Configure the environment
@@ -72,15 +74,15 @@ Create a capacity-backed Fabric workspace and Lakehouse that provide the governe
 
 1. Select **Workspaces** > **+ New workspace** and name it `caldova-agent`.
 
-1. Expand **Advanced** to confirm the license mode is set as **Fabric**. If not, apply this change.
+1. Expand **Advanced**, select the **Fabric** license mode and the paid capacity supplied for the exercise, and create the workspace.
 
 1. Open the workspace, and select **Import** > **Notebook** > **From this computer**.
 
 1. Import the notebook from `Downloads\L300-unify-data\notebooks\curate_caldova_tables.ipynb`.
 
-1. Select **Add lakehouse** in the **Explorer** pane to create a new lakehouse.
+1. In the notebook **Explorer** pane, select **Add data items** > **New lakehouse**.
 
-1. Select **New lakehouse**, enter `caldova_lakehouse`, select your workspace, and select **Create**.
+1. Enter `caldova_lakehouse`, select your workspace, enable **Lakehouse schemas** (which might be labeled **Public Preview**), and select **Create**. The notebook writes its tables to the `dbo` schema.
 
 1. Return to `curate_caldova_tables`, and select **Run all**.
 
@@ -94,7 +96,7 @@ Create a capacity-backed Fabric workspace and Lakehouse that provide the governe
 
     - The Lakehouse contains `dbo.launch_program`, `dbo.product`, `dbo.plant`, `dbo.capacity_plan`, `dbo.batch`, and `dbo.supplier`.
 
-    - The notebook result grids show an 18,900-unit gap, a 7% gap, and `PL003` as the binding plant for `LP001`.
+    - The notebook result grids show an 18,900-unit gap and a 7% gap for `LP001`. The launch result displays the binding plant name. To verify the plant ID, open `dbo.launch_program` in the Lakehouse, find `LP001`, and confirm that `BindingConstraintPlantID` is `PL003`.
 
     - Meridian Biologics ranks first among eligible suppliers.
 
@@ -110,9 +112,9 @@ Prepare Eventhouse to receive consistently typed events. This setup creates an e
 
 1. Select **+ New item** in the Caldova workspace, search for **Eventhouse**, and create `caldova_events`.
 
-1. Open `caldova_events`, and verify that its default KQL database appears.
+1. Open `caldova_events`, and verify that its default KQL database appears. Dismiss any first-time welcome or guided-tour panels.
 
-1. Select **New** > **KQL Queryset**, and name it `caldova_exception_queries`.
+1. In the default KQL database, select **KQL Queryset** on the toolbar, and name it `caldova_exception_queries`. The **New** menu is for table-related objects.
 
 1. Open `Downloads\L300-unify-data\code\05-operational-events.txt`. The file contains the table command, JSON ingestion mapping, and LP001 threshold-breach query.
 
@@ -132,7 +134,7 @@ Create and publish an eventstream that routes each simulated event to Eventhouse
 
 1. Select **Add source** > **Custom endpoint** in **Edit** mode, and name the source `caldova-simulator`.
 
-1. Select **Add destination** > **Eventhouse**, and configure:
+1. Select **Add destination**, find **Eventhouse** in the destination catalog, select **Configure**, and enter:
 
     | Setting | Value |
     |---|---|
@@ -140,30 +142,31 @@ Create and publish an eventstream that routes each simulated event to Eventhouse
     | **Destination name** | `eventhouse-operational-events` |
     | **Workspace** | Your Caldova workspace |
     | **Eventhouse** | `caldova_events` |
+    | **KQL database** | `caldova_events` |
 
-1. Connect the default stream to the Eventhouse destination.
+1. Connect the default stream's output port to the Eventhouse destination's input port. Adding a destination doesn't automatically connect it.
 
-1. Select **Add destination** > **Lakehouse**, and configure:
+1. Select **Add destination**, find **Lakehouse** in the destination catalog, select **Configure**, and enter:
 
     | Setting | Value |
     |---|---|
     | **Destination name** | `lakehouse-operational-history` |
     | **Workspace** | Your Caldova workspace |
     | **Lakehouse** | `caldova_lakehouse` |
-    | **Delta table** | Create `operational_event_history` |
+    | **Delta table** | Create `dbo.operational_event_history` |
     | **Input data format** | `JSON` |
-    | **Minimum rows** | `1` |
-    | **Maximum duration** | `1 minute` |
+    | **Minimum rows** (under **Advanced settings**) | `1` |
+    | **Seconds per file** (under **Advanced settings**) | `60` |
 
 1. Connect the default stream to the Lakehouse destination.
 
-1. Select **Publish**, and wait until the custom source and Lakehouse destination show a running state.
+1. Select **Publish**, and wait until the custom source and Lakehouse destination show **Active**. The Eventhouse destination remains **Unconfigured** until you send the priming event and complete its **Get data** wizard.
 
-### Replay and verify the simulated events
+### Prepare the simulator and prime the stream
 
 Publish the simulated event set, validate four LP001 threshold breaches, and confirm that both streaming destinations receive the expected operational evidence.
 
-1. Select the `caldova-simulator` source in the eventstream, open **Details**, and copy the **Connection string–primary key** and **Entity name** values.
+1. Select the `caldova-simulator` source in the eventstream, open **Details**, and select **Event Hub** > **SAS Key Authentication**. Locate **Connection string-primary key** and **Event hub name**. Use the complete connection string, not the standalone **Primary key** or credentials from the AMQP or Kafka tabs.
 
 1. Open PowerShell, and change to the event simulator folder:
 
@@ -171,14 +174,19 @@ Publish the simulated event set, validate four LP001 threshold breaches, and con
     Set-Location "$HOME\Downloads\L300-unify-data\event-simulator"
     ```
 
-1. Set temporary process-level environment variables:
+1. Set temporary process-level environment variables. Run these commands, then paste each value from Fabric at its prompt:
 
     ```powershell
-    $env:EVENTSTREAM_CONNECTION_STRING='your-connection-string-primary-key'
-    $env:EVENTSTREAM_ENTITY_NAME='your-entity-name'
+    $env:EVENTSTREAM_CONNECTION_STRING = (
+        [System.Net.NetworkCredential]::new(
+            '',
+            (Read-Host 'Paste the complete Event Hub connection string-primary key' -AsSecureString)
+        ).Password
+    ).Trim()
+    $env:EVENTSTREAM_ENTITY_NAME = (Read-Host 'Paste Event hub name').Trim()
     ```
 
-    These variables keep the custom-endpoint credentials in the current PowerShell process.
+    `EVENTSTREAM_ENTITY_NAME` must match **Event hub name**, which is also the connection string's `EntityPath` value. It isn't the source display name `caldova-simulator`. The connection-string prompt hides your input and keeps it out of the command text in PowerShell history. Don't share credentials in chat, screenshots, or saved files.
 
 1. Send one nonexception priming event, and confirm that PowerShell reports `Replay complete: 1 event sent.`:
 
@@ -186,21 +194,35 @@ Publish the simulated event set, validate four LP001 threshold breaches, and con
     python .\replay_events.py --prime --delay-seconds 0
     ```
 
-    The event supplies a representative JSON schema without adding a threshold breach.
+    The event supplies a representative JSON schema without adding a threshold breach. A local guard prevents accidental repeat priming. Priming is tracked separately and doesn't block the full replay.
+
+1. Keep this PowerShell window open for the full replay. The credential variables are available only in this session.
+
+### Connect the Eventhouse destination
 
 1. Return to the eventstream **Live view**, and select **Configure** on the Eventhouse destination.
 
 1. Select the existing `operational_events` table in the `caldova_events` KQL database, retain the generated **Data connection name**, and select **Next**.
 
-1. Select **JSON** as the format, open **Advanced**, select `operational_events_json`, and finish the **Get data** flow.
+1. On **Inspect the data**, select **JSON** as the format.
+
+1. Open the mapping dropdown above the preview grid, turn on **Use existing mapping**, and select `operational_events_json`.
+
+1. Confirm that the preview displays the event in the expected columns, then select **Finish** to complete the **Get data** flow.
 
 1. Verify that the Eventhouse destination reports a successful connection.
+
+### Replay and verify the simulated events
 
 1. Return to PowerShell, send the ten deterministic simulated events, and confirm that PowerShell reports `Replay complete: 10 events sent.`:
 
     ```powershell
     python .\replay_events.py
     ```
+
+    > **Note**: The simulator records the attempt in a local state file beside the script. After a successful run, another full replay stops with **Replay already completed. No events sent.** If an attempt fails or is interrupted, the guard also blocks a retry because some events might already have arrived. If results haven't appeared yet, refresh the destination or rerun the query, not the simulator.
+
+    With instructor approval, append `--force` to intentionally repeat a full replay, or add it to the priming command to repeat priming. This can duplicate events and change the expected counts. Never use `--force` while another replay is running. The guard applies only to this extracted simulator folder, not another copy or machine. Keep the state files in place.
 
 1. Clear the temporary credentials:
 
@@ -213,7 +235,7 @@ Publish the simulated event set, validate four LP001 threshold breaches, and con
 
 1. Reopen `Downloads\L300-unify-data\code\05-operational-events.txt`, and locate the final query.
 
-    _It begins with `operational_events`, filters `LaunchProgramID` to `LP001`, and compares `MetricValue` with `Threshold`_
+    _The query begins with `operational_events`, filters `LaunchProgramID` to `LP001`, and compares `MetricValue` with `Threshold`._
 
 1. Copy only the final query that begins with `operational_events`, paste it into `caldova_exception_queries`, and run it.
 
@@ -224,7 +246,25 @@ Publish the simulated event set, validate four LP001 threshold breaches, and con
     - `PL003` has two utilization exceptions above 110% and one quality-deviation exception.
     - `CMO006` has one projected supplier lead-time exception.
     - The results contain four simulated threshold breaches in total.
-    - After the destination interval, `operational_event_history` in `caldova_lakehouse` contains the replayed events.
+
+### Verify Lakehouse history
+
+1. Open `caldova_lakehouse`, refresh its table list, and expand **Tables** > **dbo**. Select `operational_event_history` to preview the persisted events.
+
+1. Switch to the Lakehouse's **SQL analytics endpoint**, open a new SQL query, and run:
+
+    ```sql
+    SELECT
+        COUNT(*) AS SimulatorRows,
+        SUM(CASE
+            WHEN LaunchProgramID = 'LP001' AND MetricValue > Threshold
+            THEN 1 ELSE 0
+        END) AS ThresholdBreaches
+    FROM dbo.operational_event_history
+    WHERE SourceSystem = 'CaldovaLabSimulator';
+    ```
+
+1. For a fresh table with one successful priming event and one full replay, confirm `SimulatorRows` is `11` and `ThresholdBreaches` is `4`. Allow at least the configured 60-second batching interval, plus ingestion and SQL endpoint synchronization time. If the table or rows aren't available immediately, wait, refresh, and rerun the query. Don't resend the events.
 
 These simulated exceptions add current operational evidence to Caldova's existing `LP001` capacity and supplier risks.
 
