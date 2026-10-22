@@ -13,6 +13,10 @@ The exercises may be used in both self-paced skilling experiences on [Microsoft 
 - [Assess capacity with a governed Caldova agent workflow](Instructions/Exercises/04-caldova-governed-agents.md) - Level 300, 110 minutes, with up to 10 minutes of optional challenges.
 - [Starter assets and provider setup](Labfiles/04-caldova-agents/README.md) - Synthetic evidence, agent instructions, qualification-filter repair, evaluation checks, and hosted-environment readiness requirements.
 
+## Lab authoring
+
+- [Agent lab-authoring instructions and templates](.github/templates/lab-template.md) - Required inputs, generation rules, output schemas, and validation gates for agents creating workshop labs based on the lab style guide.
+
 ## Information for MCTs
 <!-- You can remove this section if the exercises will not be used to support Microsoft Official Curriculum ILT -->
 
