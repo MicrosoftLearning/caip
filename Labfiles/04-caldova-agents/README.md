@@ -4,6 +4,12 @@ This pack supports a 110-minute Level 300 exercise for developers and platform e
 
 > **Important**: This repository supplies instructional content, synthetic source files, agent instructions, a deliberately faulty local qualification tool, an instructor solution, and deterministic evaluation checks. It does **not** provision a tenant, import a Copilot Studio solution, deploy a Foundry orchestrator or GitHub Copilot SDK hosted container, configure an ontology, register agents, or create cloud checkpoints. A lab provider must build and verify the integration pack below before this is a runnable hosted workshop. Local Python checks are not evidence that cloud integration works.
 
+## L400 six-hour extension
+
+The [six-hour L400 workshop](../../Instructions/Exercises/caldova-l400/index.md) reuses this pack for procurement and isolated qualification troubleshooting. Its main operational path uses the six core CSVs and event simulator under `Allfiles/L300-TW-Data`, not this pack's smaller JSON capacity fixture. Keep the two profiles and their evaluation results separate.
+
+Before delivering L400, complete the [additional provider readiness contract](l400-provider-readiness.md) and apply the [core-profile agent configuration](l400-core-agent-instructions.md). The hosted runtime, core validator, deployment package, and cloud exporters remain provider-supplied dependencies, not deployable assets included here. The original 110-minute exercise remains unchanged.
+
 ## Pack contents
 
 | Asset | Purpose |
